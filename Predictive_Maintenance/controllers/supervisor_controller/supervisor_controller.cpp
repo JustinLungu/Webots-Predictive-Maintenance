@@ -50,6 +50,17 @@ vector<vector<double>> readAccelerometerData(const string &filename) {
 int main(int argc, char **argv) {
   // Create the Supervisor instance.
   Supervisor *supervisor = new Supervisor();
+  
+  Node *rootNode = supervisor->getRoot();
+  Field *childrenField = rootNode->getField("children");
+  
+  childrenField->importMFNodeFromString(-1, "DEF E-PUCK E-puck { translation 0 0 0, controller \"\" }");
+  Node *epuckNode = supervisor->getFromDef("E-PUCK");
+  Field *translationField = epuckNode->getField("translation");
+  
+  
+  
+  
 
   // Get the time step of the current world.
   int timeStep = (int)supervisor->getBasicTimeStep();
