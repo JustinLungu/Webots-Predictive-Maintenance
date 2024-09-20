@@ -58,7 +58,8 @@ int main(int argc, char **argv) {
   Node *epuckNode = supervisor->getFromDef("E-PUCK");
   Field *translationField = epuckNode->getField("translation");
   
-  
+  const double *position = epuckNode->getPosition();
+  std::cout << "Robot position: " << position[0] << " " << position[1] << " " << position[2] << std::endl;
   
   
 
@@ -74,7 +75,7 @@ int main(int argc, char **argv) {
   // Check if data was successfully read
   if (!accelerometerData.empty()) {
     cout << "Successfully read accelerometer data with " << accelerometerData.size() << " entries." << endl;
-
+    /*
     // Print the data to verify it was read correctly
     for (size_t i = 0; i < accelerometerData.size(); ++i) {
       cout << "Entry " << i + 1 << ": ";
@@ -83,6 +84,7 @@ int main(int argc, char **argv) {
       }
       cout << endl;
     }
+    */
   } else {
     cout << "No data read from the file." << endl;
   }
