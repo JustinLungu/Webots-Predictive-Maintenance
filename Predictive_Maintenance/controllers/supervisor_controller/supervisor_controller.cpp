@@ -12,6 +12,9 @@
 #include <string>
 #include <cmath>  // For sqrt and pow
 
+#include <webots/Emitter.hpp>
+
+
 // All the webots classes are defined in the "webots" namespace
 using namespace webots;
 using namespace std;
@@ -61,12 +64,14 @@ double calculateAttenuation(double distance) {
 int main(int argc, char **argv) {
   // Create the Supervisor instance
   Supervisor *supervisor = new Supervisor();
+  Emitter *emitter = supervisor->getEmitter("emitter");
+
   
   Node *rootNode = supervisor->getRoot();
   Field *childrenField = rootNode->getField("children");
   
   // Import a robot node
-  childrenField->importMFNodeFromString(-1, "DEF E-PUCK E-puck { translation 0 0 0, controller \"e-puck_avoid_obstacles\" }");
+  childrenField->importMFNodeFromString(-1, "DEF E-PUCK E-puck { translation 0 0 0, controller \"e-puck_random_walk_CNN_inference\" }");
   Node *epuckNode = supervisor->getFromDef("E-PUCK");
   Field *translationField = epuckNode->getField("translation");
 
@@ -100,23 +105,29 @@ int main(int argc, char **argv) {
     cout << "Closest rounded point: " << coordinates[0] << " " << coordinates[1] << endl;
 
     double distance = calculateDistance(coordinates, vibrationSource);
-        double attenuation = calculateAttenuation(distance);
+    double attenuation = calculateAttenuation(distance);
 
     // Print attenuation for debug purposes
     // cout << "Attenuation: " << attenuation << endl;
 
     // Calculate and print attenuated accelerometer data at current step
     if (i < accelerometerData.size()) {
-      cout << "Entry " << i + 1 << ": ";
-      cout << "Attenuated Acceleration X: " << accelerometerData[i][0] * attenuation << " ";
-      cout << "Attenuated Acceleration Y: " << accelerometerData[i][1] * attenuation << " ";
-      cout << "Attenuated Acceleration Z: " << accelerometerData[i][2] * attenuation << endl;
+       double attenuatedX = accelerometerData[i][0] * attenuation;
+       double attenuatedY = accelerometerData[i][1] * attenuation;
+       double attenuatedZ = accelerometerData[i][2] * attenuation;
+    
+       vector<double> dataToSend = {attenuatedX, attenuatedY, attenuatedZ};
+       emitter->send(dataToSend.data(), dataToSend.size() * sizeof(double)); // Send data to the robot
+    
+       cout << "Sent data: Attenuated Acceleration X: " << attenuatedX 
+         << " Y: " << attenuatedY << " Z: " << attenuatedZ << endl;
     } else {
       cout << "Out of data" << endl;
     }
     i++;
   };
-
+  
+  delete emitter;
   delete supervisor;
   return 0;
 }
