@@ -4,6 +4,7 @@ EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/project
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/floors/protos/RectangleArena.proto"
 IMPORTABLE EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/robots/gctronic/e-puck/protos/E-puck.proto"
+IMPORTABLE EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/robots/sphero/bb8/protos/BB-8.proto"
 
 WorldInfo {
 }
@@ -16,6 +17,8 @@ TexturedBackground {
 TexturedBackgroundLight {
 }
 RectangleArena {
+  floorSize 10 10
+  floorTileSize 1 1
 }
 Robot {
   name "supervisor"

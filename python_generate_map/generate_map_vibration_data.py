@@ -22,8 +22,9 @@ def read_raw_data(file_path):
 
     :param file_path: path to txt file containing the data
     :return: dataframe containing the values
-    """
-    return pd.read_csv(file_path, sep='\t', header=None, names=['Vibration_X', 'Vibration_Y', 'Vibration_Z'])
+    """ 
+    data = pd.read_csv(file_path, sep='\t', header=None, names=['Vibration_X', 'Vibration_Y', 'Vibration_Z'])
+    return data.iloc[:1000,:] # keep only 1000 data entries, so WeBots does not crash when you import the map
 
 
 def create_populated_map(source_vibration):
@@ -89,6 +90,7 @@ def write_map_file(map_data):
 
 
 raw_data = read_raw_data(INPUT_DATA_PATH)
+print(raw_data.shape)
 data_map = create_populated_map(raw_data)
 
 x_query, y_query, time_query = 5, 5, 11

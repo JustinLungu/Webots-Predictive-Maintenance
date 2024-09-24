@@ -1,6 +1,6 @@
-// File:          supervisor_controller.cpp
+// File: supervisor_controller.cpp
 // Date:
-// Description:   Supervisor script to read and save accelerometer data
+// Description: Supervisor script to read and save accelerometer data with attenuation calculations based on robot position
 // Author:
 // Modifications:
 
@@ -10,6 +10,7 @@
 #include <sstream>
 #include <vector>
 #include <string>
+#include <cmath>  // For sqrt and pow
 
 // All the webots classes are defined in the "webots" namespace
 using namespace webots;
@@ -46,69 +47,76 @@ vector<vector<double>> readAccelerometerData(const string &filename) {
   return data;
 }
 
-// This is the main program of your controller.
+// Function to calculate the distance between two points in 3D space
+double calculateDistance(const double *position1, const vector<double> &position2) {
+  return sqrt(pow(position1[0] - position2[0], 2) + pow(position1[1] - position2[1], 2));
+}
+
+// Function to calculate attenuation based on distance
+double calculateAttenuation(double distance) {
+  return 1 / (1 + distance); // change to + distance
+}
+
+// Main program of your controller
 int main(int argc, char **argv) {
-  // Create the Supervisor instance.
+  // Create the Supervisor instance
   Supervisor *supervisor = new Supervisor();
   
   Node *rootNode = supervisor->getRoot();
   Field *childrenField = rootNode->getField("children");
   
-  childrenField->importMFNodeFromString(-1, "DEF E-PUCK E-puck { translation 0 0 0, controller \"\" }");
+  // Import a robot node
+  childrenField->importMFNodeFromString(-1, "DEF E-PUCK E-puck { translation 0 0 0, controller \"e-puck_avoid_obstacles\" }");
   Node *epuckNode = supervisor->getFromDef("E-PUCK");
   Field *translationField = epuckNode->getField("translation");
-  
-  const double *position = epuckNode->getPosition();
-  std::cout << "Robot position: " << position[0] << " " << position[1] << " " << position[2] << std::endl;
-  
-  
 
-  // Get the time step of the current world.
+  // Get the time step of the current world
   int timeStep = (int)supervisor->getBasicTimeStep();
 
-  // File path to the accelerometer data
-  string filePath = "data/capture1_60hz_30vol.txt";  // Adjust path as necessary
+  string filePath = "data/capture1_60hz_30vol.txt"; 
 
-  // Read and save the accelerometer data
+  // Read accelerometer data from file
   vector<vector<double>> accelerometerData = readAccelerometerData(filePath);
 
   // Check if data was successfully read
   if (!accelerometerData.empty()) {
     cout << "Successfully read accelerometer data with " << accelerometerData.size() << " entries." << endl;
-    /*
-    // Print the data to verify it was read correctly
-    for (size_t i = 0; i < accelerometerData.size(); ++i) {
-      cout << "Entry " << i + 1 << ": ";
-      for (size_t j = 0; j < accelerometerData[i].size(); ++j) {
-        cout << accelerometerData[i][j] << " ";
-      }
-      cout << endl;
-    }
-    */
   } else {
     cout << "No data read from the file." << endl;
   }
 
+  vector<double> vibrationSource = {0.0, 0.0, 0.0}; // change to actual starting coordinates
 
-  // Main loop:
-  // - perform simulation steps until Webots is stopping the controller
+  // Main loop: perform simulation steps until Webots stops the controller
   int i = 0;
   while (supervisor->step(timeStep) != -1) {
-    // Simulation step logic can be added here.
-    if(i < int(accelerometerData.size())){
+    // Get robot position
+    const double *position = epuckNode->getPosition();
+    double coordinates[2];
+    coordinates[0] = floor(position[0]);
+    coordinates[1] = floor(position[1]);
+    
+    cout << "Robot position: " << position[0] << " " << position[1] << " " << position[2] << endl;
+    cout << "Closest rounded point: " << coordinates[0] << " " << coordinates[1] << endl;
+
+    double distance = calculateDistance(coordinates, vibrationSource);
+        double attenuation = calculateAttenuation(distance);
+
+    // Print attenuation for debug purposes
+    // cout << "Attenuation: " << attenuation << endl;
+
+    // Calculate and print attenuated accelerometer data at current step
+    if (i < accelerometerData.size()) {
       cout << "Entry " << i + 1 << ": ";
-      for (size_t j = 0; j < accelerometerData[i].size(); ++j) {
-        cout << accelerometerData[i][j] << " ";
-      }
-      cout << endl;
+      cout << "Attenuated Acceleration X: " << accelerometerData[i][0] * attenuation << " ";
+      cout << "Attenuated Acceleration Y: " << accelerometerData[i][1] * attenuation << " ";
+      cout << "Attenuated Acceleration Z: " << accelerometerData[i][2] * attenuation << endl;
     } else {
-      cout << "Out of data";
+      cout << "Out of data" << endl;
     }
     i++;
-
   };
 
-  // Clean up
   delete supervisor;
   return 0;
 }
