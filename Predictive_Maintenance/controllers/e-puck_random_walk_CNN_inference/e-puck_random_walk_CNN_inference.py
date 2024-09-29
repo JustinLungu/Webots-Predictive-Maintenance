@@ -1,5 +1,4 @@
 ########### Now: this is the code from the tutorial https://cyberbotics.com/doc/guide/tutorial-4-more-about-controllers?tab-language=python#program-a-controller
-##### TODO: make it such that 24 readings are transmitted to the robot from the supervisor
 ###### TODO: try to import our CNN model and run an infrence with it
 ####### TODO: make this a emitter and the supervisor a received (on a sepparate channel?) and send back the classification label to the supervisor
 
