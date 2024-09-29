@@ -102,6 +102,8 @@ int main(int argc, char **argv) {
 
   // Main loop: perform simulation steps until Webots stops the controller
   size_t i = 0;
+  vector<string> accumulatedData;  // To accumulate 24 readings
+  
   while (supervisor->step(timeStep) != -1) {
     // Get robot position
     const double *position = epuckNode->getPosition();
@@ -129,24 +131,33 @@ int main(int argc, char **argv) {
        // Convert the attenuated values to a comma-separated string
        ostringstream dataStream;
        dataStream << attenuatedX << "," << attenuatedY << "," << attenuatedZ;
-       string dataString = dataStream.str();
-        
-       // Send the string data
-       emitter->send(dataString.c_str(), dataString.length() + 1); // +1 to include the null terminator
-               
-               
+       accumulatedData.push_back(dataStream.str());
        
-       //vector<double> dataToSend = {attenuatedX, attenuatedY, attenuatedZ};
-       //Send data as binary using reinterpret_cast
-       //emitter->send(reinterpret_cast<const char*>(dataToSend.data()), dataToSend.size() * sizeof(double));
-       //emitter->send(dataToSend.data(), dataToSend.size() * sizeof(double)); // Send data to the robot
-    
-       cout << "Sent data: Attenuated Acceleration X: " << attenuatedX 
-         << " Y: " << attenuatedY << " Z: " << attenuatedZ << endl;
-    } else {
-      cout << "Out of data" << endl;
-    }
-    i++;
+       // If we have accumulated 24 readings, send them
+        if (accumulatedData.size() == 24) {
+            // Join all 24 readings into a single string with a semicolon separator
+            ostringstream finalDataStream;
+            for (size_t j = 0; j < accumulatedData.size(); ++j) {
+                finalDataStream << accumulatedData[j];
+                if (j < accumulatedData.size() - 1) {
+                    finalDataStream << ";";  // Separate each reading with a semicolon
+                }
+            }
+       
+            string finalDataString = finalDataStream.str();
+        
+            // Send the string data
+            emitter->send(finalDataString.c_str(), finalDataString.length() + 1); // +1 to include the null terminator
+            // Clear the accumulated data
+            accumulatedData.clear();   
+            
+            // Debug output
+            cout << "Sent 24 readings: " << finalDataString << endl;
+        }
+      } else {
+        cout << "Out of data" << endl;
+      }
+     i++;
   };
   
   delete emitter;

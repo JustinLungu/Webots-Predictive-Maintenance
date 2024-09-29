@@ -44,11 +44,17 @@ while robot.step(TIME_STEP) != -1:
         # receive string data from supervisor
         data = receiver.getString().replace('\x00', '').strip()
         
-        # Split the comma-separated string into individual values
-        attenuated_values = list(map(float, data.split(',')))
+        # Split the data into individual readings
+        readings = data.split(';')
         
-        # print received attenuated acceleration data
-        print(f"Received data: Attenuated Acceleration X: {attenuated_values[0]}, Y: {attenuated_values[1]}, Z: {attenuated_values[2]}")
+        # Process each of the 24 readings
+        for reading in readings:
+            # Split each reading into its X, Y, and Z components
+            attenuated_values = list(map(float, reading.split(',')))
+            
+            # Print received attenuated acceleration data
+            print(f"Received data: Attenuated Acceleration X: {attenuated_values[0]}, Y: {attenuated_values[1]}, Z: {attenuated_values[2]}")
+            
         # clear the receiver queue
         receiver.nextPacket()
 
