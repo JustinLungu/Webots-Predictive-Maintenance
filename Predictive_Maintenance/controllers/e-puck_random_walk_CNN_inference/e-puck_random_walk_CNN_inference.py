@@ -1,5 +1,5 @@
-########### Now: this is the code from the tutorial https://cyberbotics.com/doc/guide/tutorial-4-more-about-controllers?tab-language=python#program-a-controller
-###### TODO: try to import our CNN model and run an infrence with it
+########### Now: this is the code from the tutorial:
+# https://cyberbotics.com/doc/guide/tutorial-4-more-about-controllers?tab-language=python#program-a-controller
 ####### TODO: make this a emitter and the supervisor a received (on a sepparate channel?) and send back the classification label to the supervisor
 
 from controller import Robot, DistanceSensor, Motor, Receiver
@@ -11,17 +11,23 @@ import struct  # For binary data unpacking
 TIME_STEP = 64
 MAX_SPEED = 6.28
 
-# create the Robot instance.
-robot = Robot()
+
+################ CNN MODEL INITIALIZATION ######################
 
 # Load the TFLite model and allocate tensors
-model_path = '../../models/cnn_model.tflite'  # Adjust the path based on the directory structure
+model_path = '../../models/cnn_model.tflite'
 interpreter = tflite.Interpreter(model_path=model_path)
 interpreter.allocate_tensors()
 
 # Get input and output tensors
 input_details = interpreter.get_input_details()
 output_details = interpreter.get_output_details()
+
+################################################################
+
+################ ROBOT INITIALIZATION ##########################
+# create the Robot instance.
+robot = Robot()
 
 # initialize devices
 ps = []
@@ -47,8 +53,16 @@ receiver = robot.getDevice('receiver')
 #allowing it to receive data at each simulation step.
 receiver.enable(TIME_STEP)
 
+#################################################################
+
+
+#################### ROBOT LOGIC + INFERENCE ####################
+
 # feedback loop: step simulation until receiving an exit event
 while robot.step(TIME_STEP) != -1:
+
+    ############## GET INPUT DATA + DO INFERENCE #################
+
     # check for data from the supervisor
     if receiver.getQueueLength() > 0:
         # receive string data from supervisor
@@ -72,14 +86,15 @@ while robot.step(TIME_STEP) != -1:
         
         # Run inference
         interpreter.invoke()
-        
-        # Get the output tensor
         output_data = interpreter.get_tensor(output_details[0]['index'])
         print(f"Inference result: {output_data}")
 
-
         # clear the receiver queue
         receiver.nextPacket()
+    
+    ####################################################################
+    
+    ################### RANDOM WALK CONTROLLER #########################
 
     # read sensors outputs
     psValues = []
@@ -107,3 +122,5 @@ while robot.step(TIME_STEP) != -1:
     # write actuators inputs
     leftMotor.setVelocity(leftSpeed)
     rightMotor.setVelocity(rightSpeed)
+    
+    ######################################################################
