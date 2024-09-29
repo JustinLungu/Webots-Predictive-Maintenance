@@ -4,6 +4,12 @@
 // Author:
 // Modifications:
 
+/*
+Are you recreating the vibration map in this code? Cause the values do no match with the ones from the csv.
+The simulation runs for approx 19 minutes before the supervisor runs out of data. Why 19 and not 5 minutes? idk
+
+*/
+
 #include <webots/Supervisor.hpp>
 #include <iostream>
 #include <fstream>
@@ -64,6 +70,7 @@ double calculateAttenuation(double distance) {
 int main(int argc, char **argv) {
   // Create the Supervisor instance
   Supervisor *supervisor = new Supervisor();
+  //used for sending data to other robots in the simulation
   Emitter *emitter = supervisor->getEmitter("emitter");
 
   
@@ -104,6 +111,7 @@ int main(int argc, char **argv) {
     cout << "Robot position: " << position[0] << " " << position[1] << " " << position[2] << endl;
     cout << "Closest rounded point: " << coordinates[0] << " " << coordinates[1] << endl;
 
+    //based on distance from vibration source we apply a certain attenuation level
     double distance = calculateDistance(coordinates, vibrationSource);
     double attenuation = calculateAttenuation(distance);
 
