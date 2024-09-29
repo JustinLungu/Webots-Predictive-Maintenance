@@ -80,7 +80,8 @@ int main(int argc, char **argv) {
   // Import a robot node
   childrenField->importMFNodeFromString(-1, "DEF E-PUCK E-puck { translation 0 0 0, controller \"e-puck_random_walk_CNN_inference\" }");
   Node *epuckNode = supervisor->getFromDef("E-PUCK");
-  Field *translationField = epuckNode->getField("translation");
+  //Not used yet: uncomment when used
+  //Field *translationField = epuckNode->getField("translation");
 
   // Get the time step of the current world
   int timeStep = (int)supervisor->getBasicTimeStep();
@@ -100,7 +101,7 @@ int main(int argc, char **argv) {
   vector<double> vibrationSource = {0.0, 0.0, 0.0}; // change to actual starting coordinates
 
   // Main loop: perform simulation steps until Webots stops the controller
-  int i = 0;
+  size_t i = 0;
   while (supervisor->step(timeStep) != -1) {
     // Get robot position
     const double *position = epuckNode->getPosition();
@@ -123,9 +124,22 @@ int main(int argc, char **argv) {
        double attenuatedX = accelerometerData[i][0] * attenuation;
        double attenuatedY = accelerometerData[i][1] * attenuation;
        double attenuatedZ = accelerometerData[i][2] * attenuation;
-    
-       vector<double> dataToSend = {attenuatedX, attenuatedY, attenuatedZ};
-       emitter->send(dataToSend.data(), dataToSend.size() * sizeof(double)); // Send data to the robot
+       
+       
+       // Convert the attenuated values to a comma-separated string
+       ostringstream dataStream;
+       dataStream << attenuatedX << "," << attenuatedY << "," << attenuatedZ;
+       string dataString = dataStream.str();
+        
+       // Send the string data
+       emitter->send(dataString.c_str(), dataString.length() + 1); // +1 to include the null terminator
+               
+               
+       
+       //vector<double> dataToSend = {attenuatedX, attenuatedY, attenuatedZ};
+       //Send data as binary using reinterpret_cast
+       //emitter->send(reinterpret_cast<const char*>(dataToSend.data()), dataToSend.size() * sizeof(double));
+       //emitter->send(dataToSend.data(), dataToSend.size() * sizeof(double)); // Send data to the robot
     
        cout << "Sent data: Attenuated Acceleration X: " << attenuatedX 
          << " Y: " << attenuatedY << " Z: " << attenuatedZ << endl;
