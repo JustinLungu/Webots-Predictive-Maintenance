@@ -3,7 +3,9 @@
 ####### TODO: make this a emitter and the supervisor a received (on a sepparate channel?) and send back the classification label to the supervisor
 
 from controller import Robot, DistanceSensor, Motor, Receiver
-import struct  # Import struct for binary data unpacking
+import numpy as np
+import tflite_runtime.interpreter as tflite  # Import TFLite runtime for inference
+import struct  # For binary data unpacking
 
 # time in [ms] of a simulation step
 TIME_STEP = 64
@@ -11,6 +13,15 @@ MAX_SPEED = 6.28
 
 # create the Robot instance.
 robot = Robot()
+
+# Load the TFLite model and allocate tensors
+model_path = '../../models/cnn_model.tflite'  # Adjust the path based on the directory structure
+interpreter = tflite.Interpreter(model_path=model_path)
+interpreter.allocate_tensors()
+
+# Get input and output tensors
+input_details = interpreter.get_input_details()
+output_details = interpreter.get_output_details()
 
 # initialize devices
 ps = []
@@ -46,14 +57,27 @@ while robot.step(TIME_STEP) != -1:
         # Split the data into individual readings
         readings = data.split(';')
         
-        # Process each of the 24 readings
+        # Collect all the 24 readings into a single numpy array for inference
+        input_data = []
         for reading in readings:
             # Split each reading into its X, Y, and Z components
             attenuated_values = list(map(float, reading.split(',')))
-            
-            # Print received attenuated acceleration data
-            print(f"Received data: Attenuated Acceleration X: {attenuated_values[0]}, Y: {attenuated_values[1]}, Z: {attenuated_values[2]}")
-            
+            input_data.extend(attenuated_values)  # Flatten into a single list
+        
+        # Convert to a numpy array and reshape based on model's expected input shape
+        input_data = np.array(input_data, dtype=np.float32).reshape(input_details[0]['shape'])
+        
+        # Set the input tensor
+        interpreter.set_tensor(input_details[0]['index'], input_data)
+        
+        # Run inference
+        interpreter.invoke()
+        
+        # Get the output tensor
+        output_data = interpreter.get_tensor(output_details[0]['index'])
+        print(f"Inference result: {output_data}")
+
+
         # clear the receiver queue
         receiver.nextPacket()
 
