@@ -1,5 +1,4 @@
 ########### Now: this is the code from the tutorial https://cyberbotics.com/doc/guide/tutorial-4-more-about-controllers?tab-language=python#program-a-controller
-#### TODO: make this a receiver. It should somehow get the data from the supervisor and print it to check everything goes fine
 ##### TODO: make it such that 24 readings are transmitted to the robot from the supervisor
 ###### TODO: try to import our CNN model and run an infrence with it
 ####### TODO: make this a emitter and the supervisor a received (on a sepparate channel?) and send back the classification label to the supervisor
@@ -34,6 +33,8 @@ rightMotor.setVelocity(0.0)
 
 # initialize receiver
 receiver = robot.getDevice('receiver')
+#method sets the time step for the receiver, 
+#allowing it to receive data at each simulation step.
 receiver.enable(TIME_STEP)
 
 # feedback loop: step simulation until receiving an exit event
