@@ -1,0 +1,44 @@
+#VRML_SIM R2021b utf8
+
+# Author: Johannes Boghaert
+# Topic: Master Thesis FS 2021
+# Institute: ETH Zuerich, Harvard University
+
+# Name: plate
+# Description: Non-metal plate/wall on ground for simulation of heterogeneous swarms
+# for 3D surface inspection in space. Joint project with MIT, NASA funded.
+
+PROTO plate_4000mm [
+  # protoFields
+  field SFVec3f         translation     0 0.2 0
+  field SFColor         color           0 0 0
+  field SFRotation      rotation        0 0 1 0.0
+  field SFString        name            "plate"
+]
+{
+  # protoBody: root node (Solid)
+  Solid {
+    # assign open fields to internal ones
+    translation IS translation
+    rotation IS rotation
+
+    children [
+      # Avoid Solids if Shape can be used
+      Shape {
+        appearance Appearance {
+          material Material {
+            diffuseColor IS color
+          }
+        }
+        geometry Box {
+          size 4.0 0.2 0.05
+        }
+      }
+    ]
+    contactMaterial "Metal"
+    name IS name
+    boundingObject Box {
+      size 4.0 0.2 0.05
+    }
+  }
+}
