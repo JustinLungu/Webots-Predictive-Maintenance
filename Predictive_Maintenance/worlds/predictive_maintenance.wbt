@@ -24,8 +24,13 @@ Robot {
     Emitter {
       channel 1
     }
+    Receiver {   # Adding a Receiver to the supervisor
+      name "receiver"
+      channel 1    # Must be the same channel as the robot's emitter
+    }
   ]
   name "supervisor"
   controller "supervisor_controller"
   supervisor TRUE
 }
+

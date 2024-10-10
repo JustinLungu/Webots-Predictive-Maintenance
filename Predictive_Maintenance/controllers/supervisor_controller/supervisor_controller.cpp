@@ -1,16 +1,11 @@
 // File: supervisor_controller.cpp
-// Date:
-// Description: Supervisor script to read and save accelerometer data with attenuation calculations based on robot position
+// Description: Supervisor script to read and save accelerometer data with attenuation calculations, 
+// and receive classification label from robot after inference.
 // Author:
-// Modifications:
-
-/*
-Are you recreating the vibration map in this code? Cause the values do no match with the ones from the csv.
-The simulation runs for approx 19 minutes before the supervisor runs out of data. Why 19 and not 5 minutes? idk
-
-*/
 
 #include <webots/Supervisor.hpp>
+#include <webots/Emitter.hpp>   // Include Emitter class
+#include <webots/Receiver.hpp>  // Include Receiver class for receiving data
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -18,10 +13,6 @@ The simulation runs for approx 19 minutes before the supervisor runs out of data
 #include <string>
 #include <cmath>  // For sqrt and pow
 
-#include <webots/Emitter.hpp>
-
-
-// All the webots classes are defined in the "webots" namespace
 using namespace webots;
 using namespace std;
 
@@ -63,29 +54,30 @@ double calculateDistance(const double *position1, const vector<double> &position
 
 // Function to calculate attenuation based on distance
 double calculateAttenuation(double distance) {
-  return 1 / (1 + distance); // change to + distance
+  return 1 / (1 + distance); // Example attenuation function
 }
 
-// Main program of your controller
 int main(int argc, char **argv) {
   // Create the Supervisor instance
   Supervisor *supervisor = new Supervisor();
-  //used for sending data to other robots in the simulation
+
+  // Initialize the emitter to send data to the robot
   Emitter *emitter = supervisor->getEmitter("emitter");
 
-  
+  // Initialize the receiver to get data from the robot
+  Receiver *receiver = supervisor->getReceiver("receiver");
+  receiver->enable(supervisor->getBasicTimeStep());
+
+  // Import the robot node
   Node *rootNode = supervisor->getRoot();
   Field *childrenField = rootNode->getField("children");
-  
-  // Import a robot node
   childrenField->importMFNodeFromString(-1, "DEF E-PUCK E-puck { translation 0 0 0, controller \"e-puck_random_walk_CNN_inference\" }");
   Node *epuckNode = supervisor->getFromDef("E-PUCK");
-  //Not used yet: uncomment when used
-  //Field *translationField = epuckNode->getField("translation");
 
   // Get the time step of the current world
   int timeStep = (int)supervisor->getBasicTimeStep();
 
+  // Path to the file containing accelerometer data
   string filePath = "data/capture1_60hz_30vol.txt"; 
 
   // Read accelerometer data from file
@@ -98,7 +90,8 @@ int main(int argc, char **argv) {
     cout << "No data read from the file." << endl;
   }
 
-  vector<double> vibrationSource = {0.0, 0.0, 0.0}; // change to actual starting coordinates
+  // Vibration source position
+  vector<double> vibrationSource = {0.0, 0.0, 0.0}; // Example source coordinates
 
   // Main loop: perform simulation steps until Webots stops the controller
   size_t i = 0;
@@ -110,31 +103,27 @@ int main(int argc, char **argv) {
     double coordinates[2];
     coordinates[0] = floor(position[0]);
     coordinates[1] = floor(position[1]);
-    
-    cout << "Robot position: " << position[0] << " " << position[1] << " " << position[2] << endl;
-    cout << "Closest rounded point: " << coordinates[0] << " " << coordinates[1] << endl;
 
-    //based on distance from vibration source we apply a certain attenuation level
+    // Calculate attenuation based on distance from the vibration source
     double distance = calculateDistance(coordinates, vibrationSource);
     double attenuation = calculateAttenuation(distance);
+    
+    //cout << "Robot position: " << position[0] << " " << position[1] << " " << position[2] << endl;
+    //cout << "Closest rounded point: " << coordinates[0] << " " << coordinates[1] << endl;
 
-    // Print attenuation for debug purposes
-    // cout << "Attenuation: " << attenuation << endl;
-
-    // Calculate and print attenuated accelerometer data at current step
+    // Calculate and print attenuated accelerometer data at the current step
     if (i < accelerometerData.size()) {
        double attenuatedX = accelerometerData[i][0] * attenuation;
        double attenuatedY = accelerometerData[i][1] * attenuation;
        double attenuatedZ = accelerometerData[i][2] * attenuation;
-       
        
        // Convert the attenuated values to a comma-separated string
        ostringstream dataStream;
        dataStream << attenuatedX << "," << attenuatedY << "," << attenuatedZ;
        accumulatedData.push_back(dataStream.str());
        
-       // If we have accumulated 24 readings, send them
-        if (accumulatedData.size() == 24) {
+       // If we have accumulated 24 readings, send them to the robot
+       if (accumulatedData.size() == 24) {
             // Join all 24 readings into a single string with a semicolon separator
             ostringstream finalDataStream;
             for (size_t j = 0; j < accumulatedData.size(); ++j) {
@@ -146,21 +135,39 @@ int main(int argc, char **argv) {
        
             string finalDataString = finalDataStream.str();
         
-            // Send the string data
-            emitter->send(finalDataString.c_str(), finalDataString.length() + 1); // +1 to include the null terminator
+            // Send the string data to the robot using the emitter
+            emitter->send(finalDataString.c_str(), finalDataString.length() + 1);  // +1 to include the null terminator
+            
             // Clear the accumulated data
             accumulatedData.clear();   
             
             // Debug output
-            cout << "Sent 24 readings: " << finalDataString << endl;
+            //cout << "Sent 24 readings: " << finalDataString << endl;
         }
-      } else {
+    } else {
         cout << "Out of data" << endl;
-      }
-     i++;
-  };
+    }
+
+    // Increment the data index
+    i++;
+
+    // Receiving classification label from robot
+    if (receiver->getQueueLength() > 0) {
+      // Get the classification label sent from the robot
+      const char* received_data = (const char*)receiver->getData();
+      int classification_label = *(int*)received_data;  // Assuming the robot sends an integer
+
+      // Print the classification label for debug
+      cout << "Received classification label from robot: " << classification_label << endl;
+
+      // Clear the receiver queue
+      receiver->nextPacket();
+    }
+  }
   
+  // Cleanup
   delete emitter;
+  delete receiver;
   delete supervisor;
   return 0;
 }

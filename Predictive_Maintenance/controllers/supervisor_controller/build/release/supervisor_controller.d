@@ -6,4 +6,5 @@ build/release/supervisor_controller.o: supervisor_controller.cpp \
  /usr/local/webots/include/controller/cpp/webots/Field.hpp \
  /usr/local/webots/include/controller/cpp/webots/../../c/webots/contact_point.h \
  /usr/local/webots/include/controller/cpp/webots/Robot.hpp \
- /usr/local/webots/include/controller/cpp/webots/Emitter.hpp
+ /usr/local/webots/include/controller/cpp/webots/Emitter.hpp \
+ /usr/local/webots/include/controller/cpp/webots/Receiver.hpp

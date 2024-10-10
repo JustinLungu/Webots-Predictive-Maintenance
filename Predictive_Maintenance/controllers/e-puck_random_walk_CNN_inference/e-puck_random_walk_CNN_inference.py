@@ -1,11 +1,9 @@
 ########### Now: this is the code from the tutorial:
 # https://cyberbotics.com/doc/guide/tutorial-4-more-about-controllers?tab-language=python#program-a-controller
-####### TODO: make this a emitter and the supervisor a received (on a sepparate channel?) and send back the classification label to the supervisor
-
-from controller import Robot, DistanceSensor, Motor, Receiver
+from controller import Robot, DistanceSensor, Motor, Receiver, Emitter
 import numpy as np
 import tflite_runtime.interpreter as tflite  # Import TFLite runtime for inference
-import struct  # For binary data unpacking
+import struct  # For binary data packing
 
 # time in [ms] of a simulation step
 TIME_STEP = 64
@@ -29,7 +27,7 @@ output_details = interpreter.get_output_details()
 # create the Robot instance.
 robot = Robot()
 
-# initialize devices
+# initialize distance sensors
 ps = []
 psNames = [
     'ps0', 'ps1', 'ps2', 'ps3',
@@ -47,11 +45,12 @@ rightMotor.setPosition(float('inf'))
 leftMotor.setVelocity(0.0)
 rightMotor.setVelocity(0.0)
 
-# initialize receiver
+# initialize receiver to receive data from the supervisor
 receiver = robot.getDevice('receiver')
-#method sets the time step for the receiver, 
-#allowing it to receive data at each simulation step.
 receiver.enable(TIME_STEP)
+
+# initialize emitter to send classification label back to the supervisor
+emitter = robot.getDevice('emitter')
 
 #################################################################
 
@@ -74,7 +73,6 @@ while robot.step(TIME_STEP) != -1:
         # Collect all the 24 readings into a single numpy array for inference
         input_data = []
         for reading in readings:
-            # Split each reading into its X, Y, and Z components
             attenuated_values = list(map(float, reading.split(',')))
             input_data.extend(attenuated_values)  # Flatten into a single list
         
@@ -87,7 +85,13 @@ while robot.step(TIME_STEP) != -1:
         # Run inference
         interpreter.invoke()
         output_data = interpreter.get_tensor(output_details[0]['index'])
-        print(f"Inference result: {output_data}")
+        
+        # Extract classification label (assuming output_data is a single value or list of probabilities)
+        classification_label = np.argmax(output_data)
+        print(f"Inference result: {classification_label}")
+        
+        # Send classification label back to the supervisor via emitter
+        emitter.send(struct.pack('i', classification_label))  # Sending the label as an integer
 
         # clear the receiver queue
         receiver.nextPacket()
