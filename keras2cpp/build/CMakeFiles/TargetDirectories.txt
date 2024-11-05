@@ -1,0 +1,3 @@
+/home/justin/MIT_Project/keras_cpp/keras2cpp/build/CMakeFiles/keras2cpp.dir
+/home/justin/MIT_Project/keras_cpp/keras2cpp/build/CMakeFiles/edit_cache.dir
+/home/justin/MIT_Project/keras_cpp/keras2cpp/build/CMakeFiles/rebuild_cache.dir
